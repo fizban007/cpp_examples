@@ -1,0 +1,191 @@
+#+TITLE: C++ Features
+#+PROPERTY: header-args:cpp :results drawer :includes '(<iostream> <vector>)
+
+* C++11/14 Features
+** Keyword auto
+Sometimes one needs to deal with weird c++ types. It's very hard to memorize and
+type then, and codes look ugly, like this:
+#+BEGIN_SRC cpp
+std::vector<int> v(10);
+for (std::vector<int>::iterator i = v.begin(); i < v.end(); i++) {
+  *i = i - v.begin();
+}
+std::cout << v[3] << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+3
+:END:
+
+One can do this instead, we type a bit less
+#+BEGIN_SRC cpp
+std::vector<int> v(10);
+for (auto i = v.begin(); i < v.end(); i++) {
+  *i = i - v.begin();
+}
+std::cout << v[3] << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+3
+:END:
+
+** Range-based for loop
+Another useful thing from c++11 is the range based for loop. The above code can
+be written as
+#+BEGIN_SRC cpp
+std::vector<int> v(10);
+for (int& n : v) {
+  n = &n - &v[0];
+}
+std::cout << v[3] << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+3
+:END:
+
+However in this way there is no trivial method of accessing the index of the
+object. The above hack works when you know the memory is contiguous, but could
+be tricky on other data structures. When you need the index you should use the
+above method of iterators.
+
+** Lambda functions
+In c++11 one can define functions and store it in an object. Now auto becomes a
+really useful keyword
+#+BEGIN_SRC cpp
+auto f = [](int& n) { return (n + 1); };
+int n = 3;
+std::cout << f(n) << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+4
+:END:
+
+We could combine this with the standard library for_each function to succinctly
+write loops or other stuff
+#+BEGIN_SRC cpp :includes '(<algorithm> <iostream> <vector>)
+std::vector<int> v(10, 5);
+std::for_each(v.begin(), v.end(), [](int& n) { n += 1; });
+std::cout << v[3] << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+6
+:END:
+
+In c++14 one could use auto keyword in lambda functions, making it useful for
+iterating heterogeneous containers
+#+BEGIN_SRC cpp :includes '(<algorithm> <iostream> <vector>)
+std::vector<int> v(10, 5);
+std::for_each(v.begin(), v.end(), [](auto& n) { n += 1; });
+std::cout << v[3] << std::endl;
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+6
+:END:
+
+* Parallel C++
+** GNU extension
+Parallel mode is an experimental mode in libstdc++ with the g++ compiler. It
+provides openmp parallelization with many std algorithms like sort, accumulate,
+inner_product, for_each, etc.
+
+Suppose I want to do this
+#+BEGIN_SRC cpp :main no :flags '("-std=c++14 -O2") :noweb yes
+  #include <vector>
+  #include <iostream>
+  #include <algorithm>
+  #include <chrono>
+
+  <<show_duration>>
+
+  int main() {
+    const int N = 1000000;
+    std::vector<int> v(N);
+
+    // Set element i equal to N - i
+    std::for_each(v.begin(), v.end(), [&v](auto& n) {
+      n = N - (&n - &v[0]);
+    });
+    // Sort the elements from small to large, ending up with element at index i
+    // equal to i + 1
+    std::sort(v.begin(), v.end());
+
+    // Check our result is right
+    std::cout << v[4] << std::endl;
+    show_duration(t_start, "for_each and sort");
+    return 0;
+  }
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+5
+Time for routine 'for_each and sort' is 24162 µs
+:END:
+
+The same thing with parallel
+#+BEGIN_SRC cpp :main no :flags '("-D_GLIBCXX_PARALLEL -fopenmp -std=c++14 -O2") :noweb yes
+  #include <vector>
+  #include <iostream>
+  #include <parallel/algorithm>
+  #include <chrono>
+
+  <<show_duration>>
+
+  int main() {
+    const int N = 1000000;
+    std::vector<int> v(N);
+
+    // Set element i equal to N - i, in parallel
+    __gnu_parallel::for_each(v.begin(), v.end(), [&v](auto& n) {
+      n = N - (&n - &v[0]);
+    });
+    // Sort the elements from small to large, ending up with element at index i
+    // equal to i + 1, in parallel
+    __gnu_parallel::sort(v.begin(), v.end());
+
+    std::cout << v[4] << std::endl;
+    show_duration(t_start, "for_each and sort");
+    return 0;
+  }
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+5
+Time for routine 'for_each and sort' is 13715 µs
+:END:
+
+So there is a speed up of about 1.7 times on my 2 core laptop, not bad.
+
+** Experimental c++17 standard library
+C++17 is supposed to bring all the above goodies into the standard library.
+However to my knowledge neither g++ nor clang has implemented them yet. When
+implemented, the code will look like this:
+
+#+BEGIN_SRC cpp
+std::sort(std::parallel::par, v.begin(), v.end());
+#+END_SRC
+
+and you will get something similar to the speed up above using __gnu_parallel.
+
+** Bonus
+This little function helps you see the time your function takes:
+#+NAME: show_duration
+#+BEGIN_SRC cpp
+  auto t_start = std::chrono::high_resolution_clock::now();
+  void show_duration(std::chrono::high_resolution_clock::time_point& t_last,
+                    const std::string& name) {
+    static auto t_now = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_last);
+    std::cout << "Time for routine '" << name << "' is " << duration.count() << " µs" << std::endl;
+    t_last = t_now;
+  }
+#+END_SRC
+
+
+
