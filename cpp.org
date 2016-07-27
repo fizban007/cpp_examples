@@ -4,7 +4,7 @@
 * C++11/14 Features
 ** Keyword auto
 Sometimes one needs to deal with weird c++ types. It's very hard to memorize and
-type then, and codes look ugly, like this:
+type then, and codes can look ugly, like this:
 #+BEGIN_SRC cpp
 std::vector<int> v(10);
 for (std::vector<int>::iterator i = v.begin(); i < v.end(); i++) {
@@ -17,7 +17,8 @@ std::cout << v[3] << std::endl;
 3
 :END:
 
-One can do this instead, we type a bit less
+One can do this instead, we type a bit less, and don't need to memorize the
+complicated iterator type name
 #+BEGIN_SRC cpp
 std::vector<int> v(10);
 for (auto i = v.begin(); i < v.end(); i++) {
@@ -29,6 +30,21 @@ std::cout << v[3] << std::endl;
 :RESULTS:
 3
 :END:
+
+One can also use auto to designate return value types. In c++11 one has to write
+something like this:
+#+BEGIN_SRC cpp :main no
+auto f(int n) -> decltype(n) {
+  return (n + 1);
+}
+#+END_SRC
+
+However in c++14 this weird decltype thing can be omitted
+#+BEGIN_SRC cpp :main no
+auto f(int n) {
+  return (n + 1);
+}
+#+END_SRC
 
 ** Range-based for loop
 Another useful thing from c++11 is the range based for loop. The above code can
@@ -103,7 +119,7 @@ Suppose I want to do this
   <<show_duration>>
 
   int main() {
-    const int N = 1000000;
+    const int N = 10000000;
     std::vector<int> v(N);
 
     // Set element i equal to N - i
@@ -114,7 +130,7 @@ Suppose I want to do this
     // equal to i + 1
     std::sort(v.begin(), v.end());
 
-    // Check our result is right
+    // Check our result is right, this should print 5
     std::cout << v[4] << std::endl;
     show_duration(t_start, "for_each and sort");
     return 0;
@@ -124,7 +140,7 @@ Suppose I want to do this
 #+RESULTS:
 :RESULTS:
 5
-Time for routine 'for_each and sort' is 24162 µs
+Time for routine 'for_each and sort' is 287892 µs
 :END:
 
 The same thing with parallel
@@ -137,7 +153,7 @@ The same thing with parallel
   <<show_duration>>
 
   int main() {
-    const int N = 1000000;
+    const int N = 10000000;
     std::vector<int> v(N);
 
     // Set element i equal to N - i, in parallel
@@ -148,6 +164,7 @@ The same thing with parallel
     // equal to i + 1, in parallel
     __gnu_parallel::sort(v.begin(), v.end());
 
+    // Check our result is right, this should print 5
     std::cout << v[4] << std::endl;
     show_duration(t_start, "for_each and sort");
     return 0;
@@ -157,7 +174,7 @@ The same thing with parallel
 #+RESULTS:
 :RESULTS:
 5
-Time for routine 'for_each and sort' is 13715 µs
+Time for routine 'for_each and sort' is 164306 µs
 :END:
 
 So there is a speed up of about 1.7 times on my 2 core laptop, not bad.
@@ -174,7 +191,8 @@ std::sort(std::parallel::par, v.begin(), v.end());
 and you will get something similar to the speed up above using __gnu_parallel.
 
 ** Bonus
-This little function helps you see the time your function takes:
+This little function helps you see the time your function takes using the c++11
+library std::chrono
 #+NAME: show_duration
 #+BEGIN_SRC cpp
   auto t_start = std::chrono::high_resolution_clock::now();
