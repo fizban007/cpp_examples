@@ -35,3 +35,6 @@ int main() {
   show_duration(t_start, "for_each and sort");
   return 0;
 }
+
+// This file should be compiled using
+//   g++ -std=c++14 -D_GLIBCXX_PARALLEL -fopenmp 4-parallel.cpp

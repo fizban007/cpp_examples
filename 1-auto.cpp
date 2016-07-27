@@ -15,4 +15,5 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-
+// This file should be compiled using
+//   g++ -std=c++11 1-auto.cpp

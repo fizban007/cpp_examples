@@ -26,3 +26,6 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+// This file should be compiled using
+//   g++ -std=c++14 3-lambda.cpp
